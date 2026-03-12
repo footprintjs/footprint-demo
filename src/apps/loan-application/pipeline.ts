@@ -20,6 +20,7 @@ export interface LoanResult {
   riskFactors: string[];
   narrative: string[];
   snapshot: Record<string, unknown>;
+  runtimeSnapshot: unknown; // raw executor.getSnapshot() for explainable-ui
 }
 
 // ── Mock Services ──────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ const manualReview = async (scope: ScopeFacade) => {
 
 // ── Build the flowchart ────────────────────────────────────────────────
 
-const chart = new FlowChartBuilder()
+const builder = new FlowChartBuilder()
   .setEnableNarrative()
   .start('ReceiveApplication', receiveApplication, undefined,
     'Receive and validate the loan application')
@@ -167,8 +168,10 @@ const chart = new FlowChartBuilder()
     .addFunctionBranch('manual-review', 'ManualReview', manualReview,
       'Flag for human underwriter review')
     .setDefault('manual-review')
-    .end()
-  .build();
+    .end();
+
+export const flowchartSpec = builder.toSpec();
+const chart = builder.build();
 
 // ── Run function ───────────────────────────────────────────────────────
 
@@ -177,7 +180,8 @@ export async function runLoanPipeline(app: LoanApplication): Promise<LoanResult>
   await executor.run({ input: { app } });
 
   const narrative = executor.getNarrative() as string[];
-  const snapshot = executor.getSnapshot().sharedState as Record<string, unknown>;
+  const runtimeSnapshot = executor.getSnapshot();
+  const snapshot = runtimeSnapshot.sharedState as Record<string, unknown>;
 
   return {
     decision: snapshot.decision as string,
@@ -187,5 +191,6 @@ export async function runLoanPipeline(app: LoanApplication): Promise<LoanResult>
     riskFactors: (snapshot.riskFactors as string[]) ?? [],
     narrative,
     snapshot,
+    runtimeSnapshot,
   };
 }

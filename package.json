@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@xyflow/react": "^12.10.1",
+    "footprint-explainable-ui": "file:../explainable-ui",
     "footprintjs": "file:../footPrint",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",

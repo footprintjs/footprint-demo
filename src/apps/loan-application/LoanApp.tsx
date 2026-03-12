@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { ArrowLeft, Play, Lightbulb, Loader2 } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { ArrowLeft, Play, Loader2, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ExplainModal } from '../../components/ExplainModal';
-import { runLoanPipeline, type LoanApplication, type LoanResult } from './pipeline';
+import { ExplainableShell, toVisualizationSnapshots } from 'footprint-explainable-ui';
+import { FlowchartView, specToReactFlow } from 'footprint-explainable-ui/flowchart';
+import '@xyflow/react/dist/style.css';
+import { runLoanPipeline, flowchartSpec, type LoanApplication, type LoanResult } from './pipeline';
 
 const defaultApp: LoanApplication = {
   applicantName: 'Bob Martinez',
@@ -13,37 +15,6 @@ const defaultApp: LoanApplication = {
   employmentYears: 1,
   loanAmount: 40_000,
 };
-
-function buildAiContext(app: LoanApplication, result: LoanResult): string {
-  return `# Loan Application — Execution Context
-
-## Input
-Applicant: ${app.applicantName}
-Annual Income: $${app.annualIncome.toLocaleString()}
-Monthly Debts: $${app.monthlyDebts.toLocaleString()}
-Credit Score: ${app.creditScore}
-Employment: ${app.employmentStatus} (${app.employmentYears} years)
-Loan Amount: $${app.loanAmount.toLocaleString()}
-
-## Decision
-${result.decision}
-
-## Computed Values
-- Credit Tier: ${result.creditTier}
-- DTI Ratio: ${result.dtiPercent}%
-- Risk Tier: ${result.riskTier}
-- Risk Factors: ${result.riskFactors.length > 0 ? result.riskFactors.join('; ') : 'none'}
-
-## Execution Narrative
-${result.narrative.join('\n')}
-
-## Full State Snapshot
-${JSON.stringify(result.snapshot, null, 2)}
-
----
-You can ask follow-up questions about this execution. All data above was captured
-automatically by footprint.js — no manual logging needed.`;
-}
 
 export function LoanApp() {
   const [form, setForm] = useState<LoanApplication>({ ...defaultApp });
@@ -62,6 +33,32 @@ export function LoanApp() {
       setRunning(false);
     }
   };
+
+  // Convert footprint runtime snapshot → explainable-ui StageSnapshots
+  const snapshots = useMemo(() => {
+    if (!result) return [];
+    return toVisualizationSnapshots(result.runtimeSnapshot as any);
+  }, [result]);
+
+  // Convert flowchart spec → ReactFlow nodes/edges (static structure)
+  const { nodes: rfNodes, edges: rfEdges } = useMemo(
+    () => specToReactFlow(flowchartSpec as any),
+    [],
+  );
+
+  // Flowchart renderer for ExplainableShell
+  const renderFlowchart = useCallback(
+    (props: { snapshots: any[]; selectedIndex: number; onNodeClick?: (i: number) => void }) => (
+      <FlowchartView
+        nodes={rfNodes}
+        edges={rfEdges}
+        snapshots={props.snapshots}
+        selectedIndex={props.selectedIndex}
+        onNodeClick={props.onNodeClick}
+      />
+    ),
+    [rfNodes, rfEdges],
+  );
 
   const decisionColor = result?.riskTier === 'low'
     ? 'text-emerald-600 dark:text-emerald-400'
@@ -224,7 +221,7 @@ export function LoanApp() {
                 </div>
               )}
 
-              {/* Explain button */}
+              {/* What happened behind the scenes button */}
               <button
                 onClick={() => setShowExplain(true)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg
@@ -232,18 +229,9 @@ export function LoanApp() {
                   bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750
                   font-medium text-sm transition-colors"
               >
-                <Lightbulb className="w-4 h-4 text-amber-500" />
-                Explain This Result
+                <Search className="w-4 h-4 text-emerald-500" />
+                What happened behind the scenes?
               </button>
-
-              {/* Modal */}
-              <ExplainModal
-                open={showExplain}
-                onClose={() => setShowExplain(false)}
-                executionTrace={result.narrative}
-                humanNarrative={buildHumanNarrative(form, result)}
-                aiContext={buildAiContext(form, result)}
-              />
             </div>
           ) : (
             <div className="flex items-center justify-center h-full min-h-[300px] rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
@@ -254,6 +242,40 @@ export function LoanApp() {
           )}
         </div>
       </div>
+
+      {/* Explainable Shell Modal */}
+      {showExplain && result && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowExplain(false)}
+          />
+          <div className="relative w-full max-w-5xl h-[80vh] bg-zinc-900 rounded-xl shadow-2xl border border-zinc-700 flex flex-col overflow-hidden">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-700 flex-shrink-0">
+              <h2 className="text-sm font-semibold text-zinc-200">
+                Behind the Scenes — powered by footprint.js
+              </h2>
+              <button
+                onClick={() => setShowExplain(false)}
+                className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* ExplainableShell from explainable-ui — with flowchart */}
+            <ExplainableShell
+              snapshots={snapshots}
+              resultData={result.snapshot}
+              narrative={result.narrative}
+              tabs={['explainable', 'ai-compatible', 'result']}
+              defaultTab="explainable"
+              renderFlowchart={renderFlowchart}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -278,28 +300,4 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <p className="text-sm font-semibold mt-0.5 capitalize">{value}</p>
     </div>
   );
-}
-
-function buildHumanNarrative(app: LoanApplication, result: LoanResult): string[] {
-  const lines: string[] = [];
-  lines.push(`${app.applicantName} applied for a $${app.loanAmount.toLocaleString()} loan.`);
-  lines.push(`Their credit score is ${app.creditScore}, which places them in the "${result.creditTier}" tier.`);
-  lines.push(
-    `Their monthly debts of $${app.monthlyDebts.toLocaleString()} against a $${app.annualIncome.toLocaleString()} annual income ` +
-    `gives them a debt-to-income ratio of ${result.dtiPercent}%.`
-  );
-  lines.push(
-    `Employment status: ${app.employmentStatus} for ${app.employmentYears} year(s).`
-  );
-
-  if (result.riskFactors.length > 0) {
-    lines.push(`Risk factors identified: ${result.riskFactors.join('; ')}.`);
-  } else {
-    lines.push('No risk factors were identified.');
-  }
-
-  lines.push(`Overall risk tier: ${result.riskTier}.`);
-  lines.push(`Final decision: ${result.decision}.`);
-
-  return lines;
 }

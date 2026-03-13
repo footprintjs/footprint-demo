@@ -5,6 +5,39 @@ import { toVisualizationSnapshots } from 'footprint-explainable-ui';
 import { runLoanPipeline, flowchartSpec, type LoanApplication, type LoanResult } from './pipeline';
 import { BehindTheScenes } from './BehindTheScenes';
 
+// ── Prompt builders ─────────────────────────────────────────────────
+
+function buildWithoutPrompt(app: LoanApplication): string {
+  return `You are a loan underwriter. Evaluate this application and decide whether to approve or reject:
+
+Applicant: ${app.applicantName}
+Annual Income: $${app.annualIncome.toLocaleString()}
+Monthly Debts: $${app.monthlyDebts.toLocaleString()}
+Credit Score: ${app.creditScore}
+Employment: ${app.employmentStatus}, ${app.employmentYears} year(s)
+Loan Amount: $${app.loanAmount.toLocaleString()}
+
+Based on standard lending criteria, should this loan be approved or rejected? What are the risk factors? Explain your reasoning.`;
+}
+
+function buildWithPrompt(app: LoanApplication, result: LoanResult): string {
+  return `You are a loan underwriter. An automated underwriting pipeline (powered by footprint.js) already evaluated this application. Here is the complete decision trace — every check, every threshold, every factor:
+
+Applicant: ${app.applicantName}
+Loan Amount: $${app.loanAmount.toLocaleString()}
+
+${result.narrative.join('\n')}
+
+Decision: ${result.decision}
+Risk Tier: ${result.riskTier}
+Risk Factors: ${result.riskFactors.join(', ') || 'None'}
+
+Using the trace above, explain to the applicant:
+1. Why the application was ${result.riskTier === 'low' ? 'approved' : 'rejected'}
+2. Which specific factors drove the decision
+3. What they could change to get a better outcome`;
+}
+
 const defaultApp: LoanApplication = {
   applicantName: 'Bob Martinez',
   annualIncome: 42_000,
@@ -43,37 +76,50 @@ export function LoanApp() {
     );
   }, [result]);
 
+  const withoutPromptText = useMemo(() => buildWithoutPrompt(form), [form]);
+  const withPromptText = useMemo(
+    () => (result ? buildWithPrompt(form, result) : ''),
+    [form, result],
+  );
+
   const decisionColor = result?.riskTier === 'low'
-    ? 'text-emerald-600 dark:text-emerald-400'
+    ? 'text-amber-600 dark:text-amber-400'
     : result?.riskTier === 'high'
       ? 'text-red-500 dark:text-red-400'
-      : 'text-amber-500 dark:text-amber-400';
+      : 'text-orange-500 dark:text-orange-400';
 
   const decisionBg = result?.riskTier === 'low'
-    ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/50'
+    ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/50'
     : result?.riskTier === 'high'
       ? 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800/50'
-      : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/50';
+      : 'bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800/50';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      {/* Back link */}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      {/* Page content — hidden on mobile when BTS is open */}
+      <div className={showExplain ? 'hidden sm:block' : ''}>
       <Link
         to="/"
-        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 mb-6 transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 mb-8 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        All Apps
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Demos
       </Link>
 
-      <h1 className="text-2xl font-bold mb-1">Loan Application</h1>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">
-        Submit a loan application and see how footprint.js captures every decision.
-      </p>
+      <div className="mb-10">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Loan Underwriting</h1>
+        <p className="text-sm text-stone-500 dark:text-zinc-400 max-w-md leading-relaxed">
+          Submit a loan application and see how <span className="font-medium text-zinc-700 dark:text-zinc-300">footprint.js</span> captures every decision.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        {/* Form — glass card */}
+        <form onSubmit={handleSubmit}
+          className="lg:col-span-3 space-y-5 rounded-2xl border border-stone-200/60 dark:border-zinc-800/60
+            bg-white/60 dark:bg-zinc-900/50 backdrop-blur-sm p-6 sm:p-8
+            shadow-sm shadow-stone-200/50 dark:shadow-none">
+
           <Field label="Applicant Name">
             <input
               type="text"
@@ -148,9 +194,11 @@ export function LoanApp() {
           <button
             type="submit"
             disabled={running}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg
-              bg-emerald-600 hover:bg-emerald-700 text-white font-medium
-              disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl
+              bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm
+              shadow-md shadow-amber-600/20 hover:shadow-lg hover:shadow-amber-600/30
+              disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+              transition-all duration-200"
           >
             {running ? (
               <>
@@ -166,75 +214,67 @@ export function LoanApp() {
           </button>
         </form>
 
-        {/* Result */}
-        <div>
+        {/* Result — glass card */}
+        <div className="lg:col-span-2">
           {result ? (
             <div className="space-y-4">
               {/* Decision card */}
-              <div className={`rounded-xl border p-5 ${decisionBg}`}>
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+              <div className={`rounded-2xl border p-6 backdrop-blur-sm ${decisionBg}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">
                   Decision
                 </p>
-                <p className={`text-lg font-bold ${decisionColor}`}>
-                  {result.decision}
+                <p className={`text-xl font-bold ${decisionColor}`}>
+                  {result.decision.split('—')[0].trim()}
+                </p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-3 leading-relaxed">
+                  {result.riskFactors.length} factor{result.riskFactors.length !== 1 ? 's' : ''} evaluated across credit, income, and employment checks.
                 </p>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard label="Credit Tier" value={result.creditTier} />
-                <StatCard label="DTI Ratio" value={`${result.dtiPercent}%`} />
-                <StatCard label="Risk Tier" value={result.riskTier} />
-              </div>
-
-              {/* Risk factors */}
-              {result.riskFactors.length > 0 && (
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 mb-2">
-                    Risk Factors
-                  </p>
-                  <ul className="space-y-1">
-                    {result.riskFactors.map((f, i) => (
-                      <li key={i} className="text-sm text-zinc-600 dark:text-zinc-400 flex items-start gap-2">
-                        <span className="text-red-400 mt-0.5">!</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* What happened behind the scenes button — prominent to draw attention */}
+              {/* CTA */}
               <button
                 onClick={() => setShowExplain(true)}
-                className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl
-                  bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600
-                  text-white font-semibold text-sm shadow-lg shadow-indigo-500/25
-                  ring-2 ring-indigo-400/30 dark:ring-indigo-400/20
-                  hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-[1.01]
-                  transition-all duration-200 animate-[pulse_3s_ease-in-out_1]"
+                className="w-full flex flex-col items-center gap-1.5 px-4 py-5 rounded-2xl
+                  bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200
+                  text-white dark:text-zinc-900 font-medium
+                  shadow-md shadow-zinc-900/10 dark:shadow-zinc-100/5
+                  hover:shadow-lg hover:scale-[1.01] transition-all duration-200"
               >
-                <Search className="w-4 h-4" />
-                What happened behind the scenes?
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <Search className="w-4 h-4" />
+                  See How It Works
+                </span>
+                <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  Flowchart trace, narrative, and every decision captured
+                </span>
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full min-h-[300px] rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
-              <p className="text-sm text-zinc-400">
+            <div className="flex flex-col items-center justify-center h-full min-h-[300px] rounded-2xl
+              border border-dashed border-stone-300/60 dark:border-zinc-700/60
+              bg-stone-50/50 dark:bg-zinc-900/30">
+              <div className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
+                <Play className="w-4 h-4 text-stone-400 dark:text-zinc-500" />
+              </div>
+              <p className="text-sm text-stone-400 dark:text-zinc-500">
                 Submit an application to see the result
               </p>
             </div>
           )}
         </div>
       </div>
+      </div>{/* end page content wrapper */}
 
-      {/* Behind the Scenes wizard */}
+      {/* Behind the Scenes — modal on desktop, inline on mobile */}
       {showExplain && result && (
         <BehindTheScenes
           snapshots={snapshots}
           narrative={result.narrative}
           spec={flowchartSpec as any}
+          appName="Loan Application"
           onClose={() => setShowExplain(false)}
+          withoutPrompt={withoutPromptText}
+          withPrompt={withPromptText}
         />
       )}
     </div>
@@ -254,11 +294,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3 text-center">
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className="text-sm font-semibold mt-0.5 capitalize">{value}</p>
-    </div>
-  );
-}

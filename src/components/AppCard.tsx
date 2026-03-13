@@ -31,6 +31,11 @@ const colorMap: Record<string, { bg: string; border: string; tag: string }> = {
     border: 'border-violet-200 dark:border-violet-800/50',
     tag: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
   },
+  cyan: {
+    bg: 'bg-cyan-50 dark:bg-cyan-950/30',
+    border: 'border-cyan-200 dark:border-cyan-800/50',
+    tag: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300',
+  },
 };
 
 export function AppCard({ to, title, description, icon, tags, color }: AppCardProps) {

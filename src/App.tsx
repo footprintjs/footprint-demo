@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
 import { LoanApp } from './apps/loan-application/LoanApp';
+import { CustomerSupportApp } from './apps/customer-support/CustomerSupportApp';
 import { useTheme } from './hooks/useTheme';
 import './App.css';
 
@@ -14,6 +15,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/loan-application" element={<LoanApp />} />
+        <Route path="/customer-support" element={<CustomerSupportApp />} />
       </Routes>
     </div>
   );

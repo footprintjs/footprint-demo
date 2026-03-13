@@ -1,4 +1,4 @@
-import { Landmark, Stethoscope, ShoppingCart, Package } from 'lucide-react';
+import { Landmark, Stethoscope, ShoppingCart, Package, Headset } from 'lucide-react';
 import { AppCard } from './AppCard';
 
 export function Dashboard() {
@@ -21,6 +21,14 @@ export function Dashboard() {
           icon={<Landmark className="w-8 h-8" />}
           tags={['decider', 'narrative', 'risk scoring']}
           color="emerald"
+        />
+        <AppCard
+          to="/customer-support"
+          title="Support Troubleshooting"
+          description="Submit a support ticket and watch footprint.js correlate scattered logs across 4 services to find a gateway timeout caused a double charge."
+          icon={<Headset className="w-8 h-8" />}
+          tags={['log correlation', 'error chain', 'multi-service']}
+          color="cyan"
         />
         <AppCard
           to="#"

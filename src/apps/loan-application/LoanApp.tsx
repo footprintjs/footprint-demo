@@ -56,7 +56,7 @@ export function LoanApp() {
       : 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/50';
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {/* Back link */}
       <Link
         to="/"
@@ -204,15 +204,17 @@ export function LoanApp() {
                 </div>
               )}
 
-              {/* What happened behind the scenes button */}
+              {/* What happened behind the scenes button — prominent to draw attention */}
               <button
                 onClick={() => setShowExplain(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg
-                  border border-zinc-200 dark:border-zinc-700
-                  bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-750
-                  font-medium text-sm transition-colors"
+                className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl
+                  bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600
+                  text-white font-semibold text-sm shadow-lg shadow-indigo-500/25
+                  ring-2 ring-indigo-400/30 dark:ring-indigo-400/20
+                  hover:shadow-xl hover:shadow-indigo-500/30 hover:scale-[1.01]
+                  transition-all duration-200 animate-[pulse_3s_ease-in-out_1]"
               >
-                <Search className="w-4 h-4 text-emerald-500" />
+                <Search className="w-4 h-4" />
                 What happened behind the scenes?
               </button>
             </div>
@@ -231,7 +233,6 @@ export function LoanApp() {
         <BehindTheScenes
           snapshots={snapshots}
           narrative={result.narrative}
-          narrativeEntries={result.narrativeEntries as any}
           spec={flowchartSpec as any}
           onClose={() => setShowExplain(false)}
         />

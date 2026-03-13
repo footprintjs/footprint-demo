@@ -3,9 +3,9 @@ import { AppCard } from './AppCard';
 
 export function Dashboard() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight">Demo Apps</h1>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Demo Apps</h1>
         <p className="mt-2 text-zinc-500 dark:text-zinc-400 max-w-xl leading-relaxed">
           Interactive apps powered by footprint.js. Submit real forms, see real
           decisions, then click <strong>Explain</strong> to see what happened

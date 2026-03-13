@@ -1,10 +1,9 @@
-import { useState, useMemo, useCallback } from 'react';
-import { ArrowLeft, Play, Loader2, Search, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ArrowLeft, Play, Loader2, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ExplainableShell, toVisualizationSnapshots } from 'footprint-explainable-ui';
-import { FlowchartView, specToReactFlow } from 'footprint-explainable-ui/flowchart';
-import '@xyflow/react/dist/style.css';
+import { toVisualizationSnapshots } from 'footprint-explainable-ui';
 import { runLoanPipeline, flowchartSpec, type LoanApplication, type LoanResult } from './pipeline';
+import { BehindTheScenes } from './BehindTheScenes';
 
 const defaultApp: LoanApplication = {
   applicantName: 'Bob Martinez',
@@ -35,30 +34,14 @@ export function LoanApp() {
   };
 
   // Convert footprint runtime snapshot → explainable-ui StageSnapshots
+  // Pass narrativeEntries so the adapter distributes rich narrative per-stage
   const snapshots = useMemo(() => {
     if (!result) return [];
-    return toVisualizationSnapshots(result.runtimeSnapshot as any);
+    return toVisualizationSnapshots(
+      result.runtimeSnapshot as any,
+      result.narrativeEntries as any,
+    );
   }, [result]);
-
-  // Convert flowchart spec → ReactFlow nodes/edges (static structure)
-  const { nodes: rfNodes, edges: rfEdges } = useMemo(
-    () => specToReactFlow(flowchartSpec as any),
-    [],
-  );
-
-  // Flowchart renderer for ExplainableShell
-  const renderFlowchart = useCallback(
-    (props: { snapshots: any[]; selectedIndex: number; onNodeClick?: (i: number) => void }) => (
-      <FlowchartView
-        nodes={rfNodes}
-        edges={rfEdges}
-        snapshots={props.snapshots}
-        selectedIndex={props.selectedIndex}
-        onNodeClick={props.onNodeClick}
-      />
-    ),
-    [rfNodes, rfEdges],
-  );
 
   const decisionColor = result?.riskTier === 'low'
     ? 'text-emerald-600 dark:text-emerald-400'
@@ -243,38 +226,15 @@ export function LoanApp() {
         </div>
       </div>
 
-      {/* Explainable Shell Modal */}
+      {/* Behind the Scenes wizard */}
       {showExplain && result && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowExplain(false)}
-          />
-          <div className="relative w-full max-w-5xl h-[80vh] bg-zinc-900 rounded-xl shadow-2xl border border-zinc-700 flex flex-col overflow-hidden">
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-700 flex-shrink-0">
-              <h2 className="text-sm font-semibold text-zinc-200">
-                Behind the Scenes — powered by footprint.js
-              </h2>
-              <button
-                onClick={() => setShowExplain(false)}
-                className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* ExplainableShell from explainable-ui — with flowchart */}
-            <ExplainableShell
-              snapshots={snapshots}
-              resultData={result.snapshot}
-              narrative={result.narrative}
-              tabs={['explainable', 'ai-compatible', 'result']}
-              defaultTab="explainable"
-              renderFlowchart={renderFlowchart}
-            />
-          </div>
-        </div>
+        <BehindTheScenes
+          snapshots={snapshots}
+          narrative={result.narrative}
+          narrativeEntries={result.narrativeEntries as any}
+          spec={flowchartSpec as any}
+          onClose={() => setShowExplain(false)}
+        />
       )}
     </div>
   );

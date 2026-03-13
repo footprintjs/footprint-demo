@@ -19,6 +19,7 @@ export interface LoanResult {
   riskTier: string;
   riskFactors: string[];
   narrative: string[];
+  narrativeEntries: unknown[]; // CombinedNarrativeEntry[] from executor.getNarrativeEntries()
   snapshot: Record<string, unknown>;
   runtimeSnapshot: unknown; // raw executor.getSnapshot() for explainable-ui
 }
@@ -149,17 +150,17 @@ const manualReview = async (scope: ScopeFacade) => {
 
 const builder = new FlowChartBuilder()
   .setEnableNarrative()
-  .start('ReceiveApplication', receiveApplication, undefined,
+  .start('ReceiveApplication', receiveApplication, 'receive-application',
     'Receive and validate the loan application')
-  .addFunction('PullCreditReport', pullCreditReport, undefined,
+  .addFunction('PullCreditReport', pullCreditReport, 'pull-credit-report',
     'Pull credit report and classify credit tier')
-  .addFunction('CalculateDTI', calculateDTI, undefined,
+  .addFunction('CalculateDTI', calculateDTI, 'calculate-dti',
     'Calculate debt-to-income ratio')
-  .addFunction('VerifyEmployment', verifyEmployment, undefined,
+  .addFunction('VerifyEmployment', verifyEmployment, 'verify-employment',
     'Verify employment status and history')
-  .addFunction('AssessRisk', assessRisk, undefined,
+  .addFunction('AssessRisk', assessRisk, 'assess-risk',
     'Evaluate all factors and determine risk tier')
-  .addDeciderFunction('LoanDecision', loanDecider as any, undefined,
+  .addDeciderFunction('LoanDecision', loanDecider as any, 'loan-decision',
     'Route to approval, rejection, or manual review based on risk tier')
     .addFunctionBranch('approved', 'Approve', approveApplication,
       'Generate approval with loan terms')
@@ -180,6 +181,7 @@ export async function runLoanPipeline(app: LoanApplication): Promise<LoanResult>
   await executor.run({ input: { app } });
 
   const narrative = executor.getNarrative() as string[];
+  const narrativeEntries = executor.getNarrativeEntries();
   const runtimeSnapshot = executor.getSnapshot();
   const snapshot = runtimeSnapshot.sharedState as Record<string, unknown>;
 
@@ -190,6 +192,7 @@ export async function runLoanPipeline(app: LoanApplication): Promise<LoanResult>
     riskTier: snapshot.riskTier as string,
     riskFactors: (snapshot.riskFactors as string[]) ?? [],
     narrative,
+    narrativeEntries,
     snapshot,
     runtimeSnapshot,
   };

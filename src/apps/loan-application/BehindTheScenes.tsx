@@ -325,7 +325,6 @@ function StepWatch({
             snapshots={snapshots}
             snapshotIndex={snapshotIdx}
             onNodeClick={(i) => { if (typeof i === 'number') onSnapshotChange(i); }}
-            showTree={false}
           />
         </div>
 

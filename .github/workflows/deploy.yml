@@ -26,8 +26,8 @@ jobs:
       # Replace file: links with npm versions for CI
       - name: Swap local deps for npm packages
         run: |
-          sed -i 's|"footprintjs": "file:../footPrint"|"footprintjs": "^0.10.1"|' package.json
-          sed -i 's|"footprint-explainable-ui": "file:../explainable-ui"|"footprint-explainable-ui": "^0.6.0"|' package.json
+          sed -i 's|"footprintjs": "file:../footPrint"|"footprintjs": "^0.17.0"|' package.json
+          sed -i 's|"footprint-explainable-ui": "file:../explainable-ui"|"footprint-explainable-ui": "^0.10.1"|' package.json
 
       - run: npm install
       - run: npm run build

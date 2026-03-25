@@ -149,7 +149,7 @@ const manualReview = async (scope: ScopeFacade) => {
 // ── Build the flowchart ────────────────────────────────────────────────
 
 const builder = new FlowChartBuilder()
-  .setEnableNarrative()
+
   .start('ReceiveApplication', receiveApplication, 'receive-application',
     'Receive and validate the loan application')
   .addFunction('PullCreditReport', pullCreditReport, 'pull-credit-report',
@@ -178,6 +178,7 @@ const chart = builder.build();
 
 export async function runLoanPipeline(app: LoanApplication): Promise<LoanResult> {
   const executor = new FlowChartExecutor(chart);
+  executor.enableNarrative();
   await executor.run({ input: { app } });
 
   const narrative = executor.getNarrative() as string[];

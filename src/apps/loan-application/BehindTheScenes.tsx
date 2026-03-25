@@ -681,12 +681,13 @@ function StepControl() {
           code={`import { FlowChartBuilder, FlowChartExecutor } from 'footprintjs';
 
 const chart = new FlowChartBuilder()
-  .setEnableNarrative()  // ← enables default strategy
+  // ← enables default strategy
   .start('Receive', receiveFn, 'receive')
   .addFunction('Process', processFn, 'process')
   .build();
 
 const executor = new FlowChartExecutor(chart);
+  executor.enableNarrative();
 await executor.run({ input: data });
 
 // Combined narrative: flow + data interleaved during traversal
@@ -710,6 +711,7 @@ const flowOnly = executor.getFlowNarrative();`}
 } from 'footprintjs';
 
 const executor = new FlowChartExecutor(chart);
+  executor.enableNarrative();
 
 // Show first 3 + last 2 loop iterations, skip middle
 executor.attachFlowRecorder(
@@ -770,12 +772,13 @@ const myStage = async (scope) => {
           accent="zinc"
           code={`// Simply don't enable narrative — no overhead at all
 const chart = new FlowChartBuilder()
-  // no .setEnableNarrative()
+  // no
   .start('Receive', receiveFn, 'receive')
   .addFunction('Process', processFn, 'process')
   .build();
 
 const executor = new FlowChartExecutor(chart);
+  executor.enableNarrative();
 await executor.run({ input: data });
 
 // No narrative collected — pipeline runs identically

@@ -396,7 +396,7 @@ const manualReviewTicket = async (scope: ScopeFacade) => {
 // ── Build the flowchart ────────────────────────────────────────────────
 
 const builder = new FlowChartBuilder()
-  .setEnableNarrative()
+
   .start('ReceiveTicket', receiveTicket, 'receive-ticket',
     'Receive and parse the support ticket')
   .addFunction('ClassifyTicket', classifyTicket, 'classify-ticket',
@@ -439,6 +439,7 @@ export const defaultTicket: SupportTicket = {
 
 export async function runSupportPipeline(ticket: SupportTicket): Promise<SupportResult> {
   const executor = new FlowChartExecutor(chart);
+  executor.enableNarrative();
   await executor.run({ input: { ticket } });
 
   const narrative = executor.getNarrative() as string[];

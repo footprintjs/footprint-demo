@@ -17,27 +17,51 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Check out both repos so file:../footprint-samples resolves correctly
       - uses: actions/checkout@v4
+        with:
+          path: footprint-demo
+
+      - uses: actions/checkout@v4
+        with:
+          repository: footprintjs/footprint-samples
+          path: footprint-samples
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
 
       # Replace file: links with npm versions for CI
       - name: Swap local deps for npm packages
+        working-directory: footprint-demo
         run: |
           sed -i 's|"footprintjs": "file:../footPrint"|"footprintjs": "^3.0.0"|' package.json
           sed -i 's|"footprint-explainable-ui": "file:../explainable-ui"|"footprint-explainable-ui": "^0.12.0"|' package.json
+          # footprint-samples stays as file:../footprint-samples — resolved from sibling checkout
           rm -f package-lock.json
 
+      # footprint-samples needs its own footprint dep resolved for the demos
+      - name: Install footprint-samples deps
+        working-directory: footprint-samples
+        run: |
+          sed -i 's|"footprint": "file:../footPrint"|"footprint": "footprintjs"|' package.json
+          npm install --package-lock=false
+
       - run: npm install
+        working-directory: footprint-demo
+
       # Skip tsc in CI (local file: deps cause type resolution issues)
       - run: npx vite build
+        working-directory: footprint-demo
         env:
           VITE_BASE: /footprint-demo/
+
       - run: cp dist/index.html dist/404.html
+        working-directory: footprint-demo
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: footprint-demo/dist
 
   deploy:
     needs: build

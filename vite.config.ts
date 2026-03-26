@@ -11,6 +11,9 @@ export default defineConfig({
       // Force single React instance when using file-linked packages
       react: path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
+      // footprint-samples demos import from 'footprint' (their local alias).
+      // Resolve it to footprintjs so both use the same instance.
+      footprint: path.resolve('./node_modules/footprintjs'),
     },
   },
 })

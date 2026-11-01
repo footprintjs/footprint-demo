@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# FootPrint Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React and TypeScript demo app for exploring FootPrint workflow execution. It presents a loan-application flow
+and a customer-support troubleshooting flow, with recorded stages, state changes, narratives and flowchart views.
+This repository is a demo application, not the FootPrint engine or an npm library.
 
-Currently, two official plugins are available:
+[Demo site](https://footprintjs.github.io/footprint-demo/) ·
+[Current FootPrint documentation](https://footprintjs.github.io/footPrint/) ·
+[Interactive playground](https://footprintjs.github.io/footprint-playground/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## What is here
 
-## React Compiler
+- [Loan application](src/apps/loan-application/LoanApp.tsx): enter an application and inspect its workflow result.
+- [Customer support](src/apps/customer-support/CustomerSupportApp.tsx): inspect a sample troubleshooting result
+  and compare its recorded narrative with raw-log prompt text.
+- [Behind the scenes](src/apps/loan-application/BehindTheScenes.tsx): time-travel controls, memory and scope
+  differences, narrative rendering and the traced flowchart from `footprint-explainable-ui`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The pipeline modules re-export `footprint-samples/demos/loan-application` and
+`footprint-samples/demos/customer-support`; the workflow implementations live in that sibling package. The UI's
+prompt-comparison text is a demonstration, not a measured guarantee about model accuracy, cost or financial decisions.
 
-## Expanding the ESLint configuration
+## Local development requires sibling packages
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+[package.json](package.json) declares three local `file:` dependencies. A standalone clone cannot resolve them:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+workspace/
+  footPrint/
+  explainable-ui/
+  footprint-samples/
+  footprint-demo/
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Prepare those sibling packages using their own installation/build instructions so their declared package entry
+points are available. The local links must resolve compatible versions; the current releases of the independent
+libraries are not verified as a working combination by this demo README.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Once those dependencies are ready, these are the app's declared commands:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
+
+| Command | Declared behavior |
+|---|---|
+| `npm run dev` | Start Vite's development server. |
+| `npm run build` | Run the TypeScript project build, then create the Vite bundle. |
+| `npm run lint` | Run ESLint. |
+| `npm run preview` | Preview an existing production bundle. |
+
+The app uses React, React Router, Vite and Tailwind. [vite.config.ts](vite.config.ts) keeps linked packages on one
+React instance and aliases the sample package's `footprint` import to `footprintjs`.
+
+## Deployment and version boundary
+
+The [Pages workflow](.github/workflows/deploy.yml) checks out `footprint-samples` as a sibling. In its build job it
+replaces the engine and renderer links with the older `footprintjs ^3.0.0` and `footprint-explainable-ui ^0.12.0`
+ranges, runs Vite without the TypeScript build, and sets `VITE_BASE=/footprint-demo/`. That deployment setup differs
+from the local `npm run build` command and does not establish compatibility with current engine/renderer releases.
+
+For a new integration, start with the current [FootPrint engine](https://github.com/footprintjs/footPrint),
+[Flow Lens renderer](https://github.com/footprintjs/explainable-ui) and
+[playground](https://footprintjs.github.io/footprint-playground/) rather than copying those legacy dependency ranges.
